@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request
 from .models import DB
 from os import getenv
+import pandas as pd
+from sqlalchemy import create_engine
+
 
 def create_app():
 
@@ -18,9 +21,12 @@ def create_app():
 
     @app.route('/reset')
     def reset():
+        # drop tables
         DB.drop_all()
+        # create tables according to schema in models.py
         DB.create_all()
         # TODO: insert songs into DB
+        return render_template('base.html', message = 'DB reset')
 
     @app.route('/recommend', methods=['POST'])
     def recommend():
@@ -38,6 +44,14 @@ def create_app():
         return render_template('base.html',
                                message='Spotify Recommender',
                                songs=fake_recommendations)
-        
+    
+    @app.route('/populate')
+    def populate():
+        """Function to populate database with entire CSV file"""
+        sql_engine = create_engine('sqlite:///test.db', echo=False)
+        df = pd.read_csv('/Users/willisbridges/Documents/GitHub/spotify_proj/spotify-12m-songs/tracks_features.csv')
+        df.to_sql('Song', sql_engine, index=False, if_exists='append')
+
+        return render_template('base.html', message='Databse loaded')
 
     return app
