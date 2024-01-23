@@ -1,8 +1,8 @@
+import csv
 from flask import Flask, render_template, request
-from .models import DB
+from models import DB
+from models import Song
 from os import getenv
-import pandas as pd
-from sqlalchemy import create_engine
 
 
 def create_app():
@@ -26,7 +26,41 @@ def create_app():
         # create tables according to schema in models.py
         DB.create_all()
         # TODO: insert songs into DB
-        return render_template('base.html', message = 'DB reset')
+        csv_file_path = '../tracks_features.csv'
+        with open(csv_file_path, 'r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                data = Song(
+                    csv_id=row['csv_id'],
+                    name=row['name'],
+                    album=row['album'],
+                    album_id=row['album_id'],
+                    artists=row['artists'],
+                    artist_id=row['artist_id'],
+                    track_number=row['track_number'],
+                    disc_number=row['disc_number'],
+                    explicit=row['explicit'],
+                    danceability=row['danceability'],
+                    energy=row['energy'],
+                    key=row['key'],
+                    loudness=row['loudness'],
+                    mode=row['mode'],
+                    speechiness=row['speechiness'],
+                    acousticness=row['acousticness'],
+                    instrumentalness=row['instrumentalness'],
+                    liveness=row['liveness'],
+                    valence=row['valence'],
+                    tempo=row['tempo'],
+                    duration_ms=row['duration_ms'],
+                    time_signature=row['time_signature'],
+                    year=row['year'],
+                    release_date=row['release_date']
+                )
+                DB.session.add(data)
+
+            DB.session.commit()
+
+            return render_template('base.html', message = 'DB reset')
 
     @app.route('/recommend', methods=['POST'])
     def recommend():
@@ -44,14 +78,4 @@ def create_app():
         return render_template('base.html',
                                message='Spotify Recommender',
                                songs=fake_recommendations)
-    
-    @app.route('/populate')
-    def populate():
-        """Function to populate database with entire CSV file"""
-        sql_engine = create_engine('sqlite:///test.db', echo=False)
-        df = pd.read_csv('/Users/willisbridges/Documents/GitHub/spotify_proj/spotify-12m-songs/tracks_features.csv')
-        df.to_sql('Song', sql_engine, index=False, if_exists='append')
-
-        return render_template('base.html', message='Databse loaded')
-
     return app
