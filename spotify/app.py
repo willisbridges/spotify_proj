@@ -1,7 +1,6 @@
 import csv
 from flask import Flask, render_template, request
-from models import DB
-from models import Song
+from .models import DB, Song
 from os import getenv
 
 
@@ -26,17 +25,17 @@ def create_app():
         # create tables according to schema in models.py
         DB.create_all()
         # TODO: insert songs into DB
-        csv_file_path = '../tracks_features.csv'
+        csv_file_path = 'test2.csv'
         with open(csv_file_path, 'r') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 data = Song(
-                    csv_id=row['csv_id'],
+                    id=row['id'],
                     name=row['name'],
                     album=row['album'],
                     album_id=row['album_id'],
                     artists=row['artists'],
-                    artist_id=row['artist_id'],
+                    artist_ids=row['artist_ids'],
                     track_number=row['track_number'],
                     disc_number=row['disc_number'],
                     explicit=row['explicit'],
