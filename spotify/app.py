@@ -1,6 +1,6 @@
 import csv
 from flask import Flask, render_template, request
-from .models import DB, Song
+from .models import Song, db
 from os import getenv
 
 
@@ -9,24 +9,26 @@ def create_app():
     app = Flask(__name__)
 
     # Config Vars
-    app.config['SQLALCHEMY_DATABASE_URI'] = getenv('DATABASE_URI')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + getenv('DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    DB.init_app(app)
+    db.init_app(app)
 
     @app.route("/")
     def home():
         return render_template('base.html', message='Spotify Recommender')
 
-    @app.route('/reset')
+    @app.route("/reset")
     def reset():
-        # drop tables
-        DB.drop_all()
-        # create tables according to schema in models.py
-        DB.create_all()
-        # TODO: insert songs into DB
+        # drop tables (if they exist)
+        db.drop_all()
+
+        # create tables according to the schema in models.py
+        db.create_all()
+
+        # TODO: insert data into the DB if needed
         csv_file_path = 'test2.csv'
-        with open(csv_file_path, 'r') as file:
+        with open(csv_file_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 data = Song(
@@ -55,11 +57,12 @@ def create_app():
                     year=row['year'],
                     release_date=row['release_date']
                 )
-                DB.session.add(data)
+                db.session.add(data)
 
-            DB.session.commit()
+            db.session.commit()
+            print("DB reset")
 
-            return render_template('base.html', message = 'DB reset')
+        return render_template('base.html', message='DB reset')
 
     @app.route('/recommend', methods=['POST'])
     def recommend():
